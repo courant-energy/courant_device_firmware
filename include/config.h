@@ -15,8 +15,8 @@
 // System Constants
 #define CONFIG_CHECK_INTERVAL 10000       // Check configuration every 10 seconds
 #define SENSOR_READING_INTERVAL 5000      // Read sensors every 5 seconds
-#define MQTT_PUBLISH_INTERVAL 30000       // Publish averaged data every 30 seconds
-#define CONFIG_API_ENDPOINT "https://u0uaid74gc.sharedwithexpose.com/api/config"
+#define MQTT_PUBLISH_INTERVAL 5000        // Publish data every 5 seconds (changed from 30000)
+#define CONFIG_API_ENDPOINT "https://fdrixd24t3.sharedwithexpose.com/api/config"
 #define DEVICE_UUID "esp-48E72958C566"
 #define AP_NAME "Courant-Setup-"         // Will be appended with chip ID
 #define AP_PASSWORD "setuppassword"       // Default AP password for config mode
@@ -28,10 +28,10 @@
 #define DEVICE_CONFIG_FILE "/device_config.json"
 
 // MQTT Constants
-#define MQTT_BROKER "192.168.100.74"      // Public MQTT broker
+#define MQTT_BROKER "broker.hivemq.com"      // Public MQTT broker
 #define MQTT_PORT 1883
-#define MQTT_TOPIC_ALERTS "device/esp-48E72958C566/alerts"
-#define MQTT_TOPIC_READINGS "device/esp-48E72958C566/readings"
+#define MQTT_TOPIC_ALERTS "courant/device/esp-48E72958C566/alerts"
+#define MQTT_TOPIC_READINGS "courant/device/esp-48E72958C566/readings"
 #define MQTT_CLIENT_ID "courant-power-monitor"
 
 // Debug settings

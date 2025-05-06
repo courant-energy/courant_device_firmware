@@ -28,7 +28,7 @@ public:
     bool isConnected() { return connected; }
     
     // Publish methods
-    bool publishSensorData(float sensor1Power, float sensor2Power);
+    bool publishSensorData(const SensorData& sensor1Data, const SensorData& sensor2Data);
     bool publishAlert(uint8_t socketNumber, float currentPower, float maxPower);
     
     // Handle MQTT events

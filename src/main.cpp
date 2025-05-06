@@ -193,21 +193,25 @@ void publishSensorData() {
   if (currentTime - lastPublishTime >= MQTT_PUBLISH_INTERVAL) {
     lastPublishTime = currentTime;
     
-    // Get average power readings
-    float socket1AveragePower = sensorManager.getSensor1AveragePower();
-    float socket2AveragePower = sensorManager.getSensor2AveragePower();
+    // Get complete sensor data readings
+    SensorData socket1Data = sensorManager.getSensor1Data();
+    SensorData socket2Data = sensorManager.getSensor2Data();
     
     // Publish to MQTT
     if (mqttManager.isConnected()) {
-      mqttManager.publishSensorData(socket1AveragePower, socket2AveragePower);
+      mqttManager.publishSensorData(socket1Data, socket2Data);
       
       // Reset averages after publishing
       sensorManager.resetAverages();
       
       if (DEBUG_ENABLED) {
-        Serial.println("[System] Published averaged sensor data: Socket1=" + 
-                      String(socket1AveragePower) + "W, Socket2=" + 
-                      String(socket2AveragePower) + "W");
+        Serial.println("[System] Published sensor data: Socket1=" + 
+                      String(socket1Data.power) + "W (" + 
+                      String(socket1Data.voltage) + "V, " +
+                      String(socket1Data.current) + "A), Socket2=" + 
+                      String(socket2Data.power) + "W (" + 
+                      String(socket2Data.voltage) + "V, " +
+                      String(socket2Data.current) + "A)");
       }
     }
   }

@@ -20,13 +20,13 @@ bool MqttManager::begin() {
   }
   
   // Create a unique client ID using the MAC address
-  clientId = MQTT_CLIENT_ID;
-  clientId += "-";
-  clientId += WiFi.macAddress();
-  clientId.replace(":", "");
+  clientId = DEVICE_UUID;
 
   // Create PubSubClient instance
   mqttClient = new PubSubClient(wifiClient);
+  
+  // Set a larger buffer size to accommodate the nested JSON data (default is only 256 bytes)
+  mqttClient->setBufferSize(1024);
   
   // Configure MQTT broker settings
   mqttClient->setServer(MQTT_BROKER, MQTT_PORT);
@@ -104,7 +104,7 @@ bool MqttManager::reconnect() {
   }
 }
 
-bool MqttManager::publishSensorData(float sensor1Power, float sensor2Power) {
+bool MqttManager::publishSensorData(const SensorData& sensor1Data, const SensorData& sensor2Data) {
   if (!connected) {
     if (DEBUG_ENABLED) {
       Serial.println("[MQTT] Not connected, can't publish data");
@@ -114,12 +114,39 @@ bool MqttManager::publishSensorData(float sensor1Power, float sensor2Power) {
   
   JsonDocument doc;
   doc["timestamp"] = millis();
-  doc["socket1_power"] = sensor1Power;
-  doc["socket2_power"] = sensor2Power;
   doc["device_id"] = clientId;
+  
+  // Socket 1 data - using recommended syntax instead of createNestedObject
+  doc["socket1"].to<JsonObject>();
+  doc["socket1"]["socket_id"] = 1;  // Add socket_id field
+  doc["socket1"]["voltage"] = sensor1Data.voltage;
+  doc["socket1"]["current"] = sensor1Data.current;
+  doc["socket1"]["power"] = sensor1Data.power;
+  doc["socket1"]["energy"] = sensor1Data.energy;
+  doc["socket1"]["frequency"] = sensor1Data.frequency;
+  doc["socket1"]["power_factor"] = sensor1Data.powerFactor;
+  doc["socket1"]["valid"] = sensor1Data.isValid;
+  
+  // Socket 2 data - using recommended syntax instead of createNestedObject
+  doc["socket2"].to<JsonObject>();
+  doc["socket2"]["socket_id"] = 2;  // Add socket_id field
+  doc["socket2"]["voltage"] = sensor2Data.voltage;
+  doc["socket2"]["current"] = sensor2Data.current;
+  doc["socket2"]["power"] = sensor2Data.power;
+  doc["socket2"]["energy"] = sensor2Data.energy;
+  doc["socket2"]["frequency"] = sensor2Data.frequency;
+  doc["socket2"]["power_factor"] = sensor2Data.powerFactor;
+  doc["socket2"]["valid"] = sensor2Data.isValid;
   
   String payload;
   serializeJson(doc, payload);
+  
+  // Print payload size for debugging
+  if (DEBUG_ENABLED) {
+    Serial.print("[MQTT] Payload size: ");
+    Serial.print(payload.length());
+    Serial.println(" bytes");
+  }
   
   bool success = mqttClient->publish(MQTT_TOPIC_READINGS, payload.c_str());
   
@@ -128,6 +155,8 @@ bool MqttManager::publishSensorData(float sensor1Power, float sensor2Power) {
       Serial.println("[MQTT] Published sensor data: " + payload);
     } else {
       Serial.println("[MQTT] Failed to publish sensor data");
+      Serial.print("[MQTT] MQTT client state: ");
+      Serial.println(mqttClient->state());
     }
   }
   
