@@ -16,7 +16,7 @@
 #define CONFIG_CHECK_INTERVAL 10000       // Check configuration every 10 seconds
 #define SENSOR_READING_INTERVAL 5000      // Read sensors every 5 seconds
 #define MQTT_PUBLISH_INTERVAL 5000        // Publish data every 5 seconds (changed from 30000)
-#define CONFIG_API_ENDPOINT "https://fdrixd24t3.sharedwithexpose.com/api/config"
+#define CONFIG_API_ENDPOINT "https://courant.energy/api/config"
 #define DEVICE_UUID "esp-48E72958C566"
 #define AP_NAME "Courant-Setup-"         // Will be appended with chip ID
 #define AP_PASSWORD "setuppassword"       // Default AP password for config mode
