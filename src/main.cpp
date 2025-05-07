@@ -95,7 +95,7 @@ void loop() {
     // Update MQTT connection
     mqttManager.update();
     
-    // Publish averaged sensor data periodically
+    // Publish sensor data periodically
     publishSensorData();
     
     // Update relay states based on latest config
@@ -200,9 +200,6 @@ void publishSensorData() {
     // Publish to MQTT
     if (mqttManager.isConnected()) {
       mqttManager.publishSensorData(socket1Data, socket2Data);
-      
-      // Reset averages after publishing
-      sensorManager.resetAverages();
       
       if (DEBUG_ENABLED) {
         Serial.println("[System] Published sensor data: Socket1=" + 

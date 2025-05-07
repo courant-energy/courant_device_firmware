@@ -54,15 +54,6 @@ bool SensorManager::update() {
     bool sensor1Success = readSensor(pzem1, sensor1Data);
     bool sensor2Success = readSensor(pzem2, sensor2Data);
     
-    // Add samples to power averages if valid
-    if (sensor1Data.isValid) {
-      sensor1PowerSamples.addSample(sensor1Data.power);
-    }
-    
-    if (sensor2Data.isValid) {
-      sensor2PowerSamples.addSample(sensor2Data.power);
-    }
-    
     if (DEBUG_ENABLED) {
       if (sensor1Success) {
         Serial.println("[Sensor] PZEM1 Reading: " + 
@@ -125,9 +116,4 @@ bool SensorManager::readSensor(PZEM004Tv30* pzem, SensorData& data) {
   data.isValid = true;
   
   return true;
-}
-
-void SensorManager::resetAverages() {
-  sensor1PowerSamples.reset();
-  sensor2PowerSamples.reset();
 }
