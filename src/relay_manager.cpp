@@ -15,6 +15,7 @@ void RelayManager::begin() {
   // Initialize relays to OFF state
   digitalWrite(RELAY_PIN_1, LOW);
   digitalWrite(RELAY_PIN_2, LOW);
+  delay(500); // Allow time for relays to settle
   
   if (DEBUG_ENABLED) {
     Serial.println("[Relay] Relay control initialized");
