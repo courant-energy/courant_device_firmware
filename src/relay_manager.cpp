@@ -26,6 +26,7 @@ void RelayManager::setRelay1(bool state) {
   if (state != relay1State) {
     digitalWrite(RELAY_PIN_1, state ? HIGH : LOW);
     relay1State = state;
+    delay(500); // Debounce delay to prevent flickering
     
     if (DEBUG_ENABLED) {
       Serial.println("[Relay] Relay 1 set to " + String(state ? "ON" : "OFF"));
@@ -38,6 +39,7 @@ void RelayManager::setRelay2(bool state) {
   if (state != relay2State) {
     digitalWrite(RELAY_PIN_2, state ? HIGH : LOW);
     relay2State = state;
+    delay(500); // Debounce delay to prevent flickering
     
     if (DEBUG_ENABLED) {
       Serial.println("[Relay] Relay 2 set to " + String(state ? "ON" : "OFF"));
