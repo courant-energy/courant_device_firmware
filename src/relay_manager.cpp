@@ -52,6 +52,7 @@ void RelayManager::emergencyShutdown(uint8_t relayNumber) {
   if (relayNumber == 1) {
     digitalWrite(RELAY_PIN_1, LOW);
     relay1State = false;
+    delay(500); // Debounce delay to prevent flickering
     if (DEBUG_ENABLED) {
       Serial.println("[Relay] !!! EMERGENCY SHUTDOWN !!! Relay 1 turned OFF");
     }
@@ -59,6 +60,7 @@ void RelayManager::emergencyShutdown(uint8_t relayNumber) {
   else if (relayNumber == 2) {
     digitalWrite(RELAY_PIN_2, LOW);
     relay2State = false;
+    delay(500); // Debounce delay to prevent flickering
     if (DEBUG_ENABLED) {
       Serial.println("[Relay] !!! EMERGENCY SHUTDOWN !!! Relay 2 turned OFF");
     }
