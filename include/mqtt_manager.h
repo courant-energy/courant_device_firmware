@@ -10,7 +10,7 @@
 
 class MqttManager {
 private:
-    WiFiClient wifiClient;
+    WiFiClientSecure wifiClient;
     PubSubClient* mqttClient;
     String clientId;
     bool connected;
@@ -26,6 +26,7 @@ public:
     bool begin();
     void update();
     bool isConnected() { return connected; }
+    void disconnect();
     
     // Publish methods
     bool publishSensorData(const SensorData& sensor1Data, const SensorData& sensor2Data);

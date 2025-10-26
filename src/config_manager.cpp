@@ -7,15 +7,15 @@ void ConfigManager::begin(String deviceId) {
   deviceUuid = deviceId;
   
   if (DEBUG_ENABLED) {
-    Serial.println("[Config] Initializing Configuration Manager");
-    Serial.print("Device UUID: ");
+    Serial.println(F("[Config] Initializing Configuration Manager"));
+    Serial.print(F("Device UUID: "));
     Serial.println(deviceUuid);
   }
   
   // Try to load configuration from LittleFS
   if (!loadFromLittleFS()) {
     if (DEBUG_ENABLED) {
-      Serial.println("[Config] No saved configuration, using defaults");
+      Serial.println(F("[Config] No saved configuration, using defaults"));
     }
     // Set default values
     socket1Config.assignedId = 1;
@@ -31,34 +31,36 @@ void ConfigManager::begin(String deviceId) {
   }
   
   if (DEBUG_ENABLED) {
-    Serial.println("[Config] Configuration initialized");
-    Serial.println("Socket 1 - Max Power: " + String(socket1Config.maximumPower) + "W, State: " + 
-                  (socket1Config.isOn ? "ON" : "OFF"));
-    Serial.println("Socket 2 - Max Power: " + String(socket2Config.maximumPower) + "W, State: " + 
-                  (socket2Config.isOn ? "ON" : "OFF"));
+    Serial.println(F("[Config] Configuration initialized"));
+    Serial.print(F("Socket 1 - Max Power: "));
+    Serial.print(socket1Config.maximumPower);
+    Serial.print(F("W, State: "));
+    Serial.println(socket1Config.isOn ? F("ON") : F("OFF"));
+    Serial.print(F("Socket 2 - Max Power: "));
+    Serial.print(socket2Config.maximumPower);
+    Serial.print(F("W, State: "));
+    Serial.println(socket2Config.isOn ? F("ON") : F("OFF"));
   }
 }
 
 void ConfigManager::update() {
-  unsigned long currentTime = millis();
-  
-  // Check if it's time to fetch new config
-  if (currentTime - lastConfigCheck >= CONFIG_CHECK_INTERVAL) {
-    lastConfigCheck = currentTime;
-    fetchConfig();
-  }
+  // Periodic configuration updates are now handled externally
+  // to coordinate with MQTT connection management
 }
 
 bool ConfigManager::fetchConfig() {
   if (!WiFi.isConnected()) {
     if (DEBUG_ENABLED) {
-      Serial.println("[Config] WiFi not connected, skipping config fetch");
+      Serial.println(F("[Config] WiFi not connected, skipping config fetch"));
     }
     return false;
   }
   
   if (DEBUG_ENABLED) {
-    Serial.println("[Config] Fetching configuration from API...");
+    Serial.println(F("[Config] Fetching configuration from API..."));
+    Serial.print(F("[Config] Free heap before API call: "));
+    Serial.print(ESP.getFreeHeap());
+    Serial.println(F(" bytes"));
   }
   
   WiFiClientSecure client;
@@ -79,19 +81,19 @@ bool ConfigManager::fetchConfig() {
     
     if (success) {
       if (DEBUG_ENABLED) {
-        Serial.println("[Config] Successfully updated configuration from API");
+        Serial.println(F("[Config] Successfully updated configuration from API"));
       }
       
       // Save the new config
       saveToLittleFS();
     } else {
       if (DEBUG_ENABLED) {
-        Serial.println("[Config] Failed to parse API response");
+        Serial.println(F("[Config] Failed to parse API response"));
       }
     }
   } else {
     if (DEBUG_ENABLED) {
-      Serial.print("[Config] API request failed, code: ");
+      Serial.print(F("[Config] API request failed, code: "));
       Serial.println(httpCode);
     }
   }
@@ -101,12 +103,12 @@ bool ConfigManager::fetchConfig() {
 }
 
 bool ConfigManager::parseConfigJson(String jsonString) {
-  JsonDocument doc;
+  StaticJsonDocument<512> doc;  // Reduced from default dynamic allocation
   DeserializationError error = deserializeJson(doc, jsonString);
   
   if (error) {
     if (DEBUG_ENABLED) {
-      Serial.print("[Config] JSON parsing failed: ");
+      Serial.print(F("[Config] JSON parsing failed: "));
       Serial.println(error.c_str());
     }
     return false;
@@ -115,7 +117,7 @@ bool ConfigManager::parseConfigJson(String jsonString) {
   // Validate JSON structure
   if (!doc.containsKey("device_uuid") || !doc.containsKey("sockets")) {
     if (DEBUG_ENABLED) {
-      Serial.println("[Config] Invalid JSON structure");
+      Serial.println(F("[Config] Invalid JSON structure"));
     }
     return false;
   }
@@ -124,7 +126,7 @@ bool ConfigManager::parseConfigJson(String jsonString) {
   String apiDeviceUuid = doc["device_uuid"].as<String>();
   if (apiDeviceUuid != deviceUuid) {
     if (DEBUG_ENABLED) {
-      Serial.println("[Config] UUID mismatch in API response");
+      Serial.println(F("[Config] UUID mismatch in API response"));
     }
     return false;
   }
@@ -143,8 +145,10 @@ bool ConfigManager::parseConfigJson(String jsonString) {
       socket1Config.isOn = isOn;
       
       if (DEBUG_ENABLED) {
-        Serial.println("[Config] Updated Socket 1 - Max: " + String(maximumPower) + "W, State: " + 
-                      (isOn ? "ON" : "OFF"));
+        Serial.print(F("[Config] Updated Socket 1 - Max: "));
+        Serial.print(maximumPower);
+        Serial.print(F("W, State: "));
+        Serial.println(isOn ? F("ON") : F("OFF"));
       }
     } 
     else if (assignedId == 2) {
@@ -153,8 +157,10 @@ bool ConfigManager::parseConfigJson(String jsonString) {
       socket2Config.isOn = isOn;
       
       if (DEBUG_ENABLED) {
-        Serial.println("[Config] Updated Socket 2 - Max: " + String(maximumPower) + "W, State: " + 
-                      (isOn ? "ON" : "OFF"));
+        Serial.print(F("[Config] Updated Socket 2 - Max: "));
+        Serial.print(maximumPower);
+        Serial.print(F("W, State: "));
+        Serial.println(isOn ? F("ON") : F("OFF"));
       }
     }
   }
@@ -165,14 +171,14 @@ bool ConfigManager::parseConfigJson(String jsonString) {
 bool ConfigManager::loadFromLittleFS() {
   if (!LittleFS.begin()) {
     if (DEBUG_ENABLED) {
-      Serial.println("[Config] Failed to mount file system");
+      Serial.println(F("[Config] Failed to mount file system"));
     }
     return false;
   }
   
   if (!LittleFS.exists(DEVICE_CONFIG_FILE)) {
     if (DEBUG_ENABLED) {
-      Serial.println("[Config] No configuration file found");
+      Serial.println(F("[Config] No configuration file found"));
     }
     return false;
   }
@@ -180,7 +186,7 @@ bool ConfigManager::loadFromLittleFS() {
   File configFile = LittleFS.open(DEVICE_CONFIG_FILE, "r");
   if (!configFile) {
     if (DEBUG_ENABLED) {
-      Serial.println("[Config] Failed to open config file");
+      Serial.println(F("[Config] Failed to open config file"));
     }
     return false;
   }
@@ -190,12 +196,12 @@ bool ConfigManager::loadFromLittleFS() {
   configFile.readBytes(buf.get(), size);
   configFile.close();
   
-  JsonDocument doc;
+  StaticJsonDocument<256> doc;  // Small local config file
   DeserializationError error = deserializeJson(doc, buf.get());
   
   if (error) {
     if (DEBUG_ENABLED) {
-      Serial.println("[Config] Failed to parse config file");
+      Serial.println(F("[Config] Failed to parse config file"));
     }
     return false;
   }
@@ -213,7 +219,7 @@ bool ConfigManager::loadFromLittleFS() {
   socket2Config.isOn = socket2["isOn"] | true;
   
   if (DEBUG_ENABLED) {
-    Serial.println("[Config] Loaded configuration from LittleFS");
+    Serial.println(F("[Config] Loaded configuration from LittleFS"));
   }
   
   return true;
@@ -222,12 +228,12 @@ bool ConfigManager::loadFromLittleFS() {
 bool ConfigManager::saveToLittleFS() {
   if (!LittleFS.begin()) {
     if (DEBUG_ENABLED) {
-      Serial.println("[Config] Failed to mount file system");
+      Serial.println(F("[Config] Failed to mount file system"));
     }
     return false;
   }
   
-  JsonDocument doc;
+  StaticJsonDocument<256> doc;  // Small local config file
   
   // Socket 1 config
   JsonObject socket1 = doc.createNestedObject("socket1");
@@ -244,7 +250,7 @@ bool ConfigManager::saveToLittleFS() {
   File configFile = LittleFS.open(DEVICE_CONFIG_FILE, "w");
   if (!configFile) {
     if (DEBUG_ENABLED) {
-      Serial.println("[Config] Failed to open config file for writing");
+      Serial.println(F("[Config] Failed to open config file for writing"));
     }
     return false;
   }
@@ -253,7 +259,7 @@ bool ConfigManager::saveToLittleFS() {
   configFile.close();
   
   if (DEBUG_ENABLED) {
-    Serial.println("[Config] Configuration saved to LittleFS");
+    Serial.println(F("[Config] Configuration saved to LittleFS"));
   }
   
   return true;
@@ -272,7 +278,7 @@ void ConfigManager::setSocket2MaxPower(float power) {
 void ConfigManager::resetConfig() {
   if (!LittleFS.begin()) {
     if (DEBUG_ENABLED) {
-      Serial.println("[Config] Failed to mount file system for reset");
+      Serial.println(F("[Config] Failed to mount file system for reset"));
     }
     return;
   }
@@ -280,7 +286,7 @@ void ConfigManager::resetConfig() {
   if (LittleFS.exists(DEVICE_CONFIG_FILE)) {
     LittleFS.remove(DEVICE_CONFIG_FILE);
     if (DEBUG_ENABLED) {
-      Serial.println("[Config] Device configuration removed");
+      Serial.println(F("[Config] Device configuration removed"));
     }
   }
   

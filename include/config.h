@@ -6,10 +6,10 @@
 // Pin Definitions
 #define RELAY_PIN_1 D0  // Relay 1 control pin (Normally Open)
 #define RELAY_PIN_2 D1  // Relay 2 control pin (Normally Open)
-#define PZEM1_RX_PIN D3 // PZEM1 RX pin
-#define PZEM1_TX_PIN D4 // PZEM1 TX pin
-#define PZEM2_RX_PIN D5 // PZEM2 RX pin
-#define PZEM2_TX_PIN D6 // PZEM2 TX pin
+#define PZEM1_RX_PIN D4 // PZEM1 RX pin
+#define PZEM1_TX_PIN D3 // PZEM1 TX pin
+#define PZEM2_RX_PIN D6 // PZEM2 RX pin
+#define PZEM2_TX_PIN D5 // PZEM2 TX pin
 #define RST_BTN_PIN D7  // Reset button pin for configuration reset
 
 // System Constants
@@ -28,11 +28,13 @@
 #define DEVICE_CONFIG_FILE "/device_config.json"
 
 // MQTT Constants
-#define MQTT_BROKER "broker.hivemq.com"      // Public MQTT broker
-#define MQTT_PORT 1883
+#define MQTT_BROKER "4b199d34bf7445b8b96720b037e6a365.s1.eu.hivemq.cloud"      
+#define MQTT_PORT 8883
 #define MQTT_TOPIC_ALERTS "courant/device/esp-48E72958C566/alerts"
 #define MQTT_TOPIC_READINGS "courant/device/esp-48E72958C566/readings"
 #define MQTT_CLIENT_ID "courant-power-monitor"
+#define MQTT_USERNAME "courant"                    // No username for public broker
+#define MQTT_PASSWORD "techFORlife06"                    // No password for public broker
 
 // Debug settings
 #define DEBUG_ENABLED true

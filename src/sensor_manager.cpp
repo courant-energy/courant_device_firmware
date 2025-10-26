@@ -21,7 +21,7 @@ SensorManager::~SensorManager() {
 
 bool SensorManager::begin() {
   if (DEBUG_ENABLED) {
-    Serial.println("[Sensor] Initializing PZEM sensors");
+    Serial.println(F("[Sensor] Initializing PZEM sensors"));
   }
   
   // Initialize SoftwareSerial for PZEM1
@@ -37,7 +37,7 @@ bool SensorManager::begin() {
   pzem2->resetEnergy();
   
   if (DEBUG_ENABLED) {
-    Serial.println("[Sensor] PZEM sensors initialized");
+    Serial.println(F("[Sensor] PZEM sensors initialized"));
   }
   
   return true;
@@ -56,23 +56,29 @@ bool SensorManager::update() {
     
     if (DEBUG_ENABLED) {
       if (sensor1Success) {
-        Serial.println("[Sensor] PZEM1 Reading: " + 
-                      String(sensor1Data.voltage) + "V, " + 
-                      String(sensor1Data.current, 3) + "A, " + 
-                      String(sensor1Data.power) + "W, PF: " + 
-                      String(sensor1Data.powerFactor));
+        Serial.print(F("[Sensor] PZEM1 Reading: "));
+        Serial.print(sensor1Data.voltage);
+        Serial.print(F("V, "));
+        Serial.print(sensor1Data.current, 3);
+        Serial.print(F("A, "));
+        Serial.print(sensor1Data.power);
+        Serial.print(F("W, PF: "));
+        Serial.println(sensor1Data.powerFactor);
       } else {
-        Serial.println("[Sensor] Failed to read from PZEM1");
+        Serial.println(F("[Sensor] Failed to read from PZEM1"));
       }
       
       if (sensor2Success) {
-        Serial.println("[Sensor] PZEM2 Reading: " + 
-                      String(sensor2Data.voltage) + "V, " + 
-                      String(sensor2Data.current, 3) + "A, " + 
-                      String(sensor2Data.power) + "W, PF: " + 
-                      String(sensor2Data.powerFactor));
+        Serial.print(F("[Sensor] PZEM2 Reading: "));
+        Serial.print(sensor2Data.voltage);
+        Serial.print(F("V, "));
+        Serial.print(sensor2Data.current, 3);
+        Serial.print(F("A, "));
+        Serial.print(sensor2Data.power);
+        Serial.print(F("W, PF: "));
+        Serial.println(sensor2Data.powerFactor);
       } else {
-        Serial.println("[Sensor] Failed to read from PZEM2");
+        Serial.println(F("[Sensor] Failed to read from PZEM2"));
       }
     }
     

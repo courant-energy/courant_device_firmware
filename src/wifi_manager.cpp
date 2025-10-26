@@ -16,7 +16,7 @@ WiFiManager::~WiFiManager() {
 
 bool WiFiManager::begin() {
   if (DEBUG_ENABLED) {
-    Serial.println("[WiFi] Initializing WiFi Manager");
+    Serial.println(F("[WiFi] Initializing WiFi Manager"));
   }
   
   // Try to load WiFi configuration
@@ -38,15 +38,15 @@ bool WiFiManager::begin() {
       isConfigMode = false;
       if (DEBUG_ENABLED) {
         Serial.println();
-        Serial.println("[WiFi] Connected successfully");
-        Serial.print("IP: ");
+        Serial.println(F("[WiFi] Connected successfully"));
+        Serial.print(F("IP: "));
         Serial.println(WiFi.localIP());
       }
       return true;
     } else {
       if (DEBUG_ENABLED) {
         Serial.println();
-        Serial.println("[WiFi] Failed to connect with stored credentials");
+        Serial.println(F("[WiFi] Failed to connect with stored credentials"));
       }
     }
   }
@@ -71,7 +71,7 @@ void WiFiManager::handleConnection() {
     if (now - lastReconnectAttempt > 30000) {
       lastReconnectAttempt = now;
       if (DEBUG_ENABLED) {
-        Serial.println("[WiFi] Attempting reconnection...");
+        Serial.println(F("[WiFi] Attempting reconnection..."));
       }
       
       WiFi.reconnect();
@@ -85,7 +85,7 @@ void WiFiManager::handleConnection() {
       if (WiFi.status() == WL_CONNECTED) {
         isConnected = true;
         if (DEBUG_ENABLED) {
-          Serial.println("[WiFi] Reconnected successfully");
+          Serial.println(F("[WiFi] Reconnected successfully"));
         }
       }
     }
@@ -96,7 +96,7 @@ void WiFiManager::handleConnection() {
 
 void WiFiManager::startAccessPoint() {
   if (DEBUG_ENABLED) {
-    Serial.println("[WiFi] Starting Access Point for configuration");
+    Serial.println(F("[WiFi] Starting Access Point for configuration"));
   }
   
   // Generate unique AP name using MAC address
@@ -109,12 +109,12 @@ void WiFiManager::startAccessPoint() {
   WiFi.softAP(apName.c_str(), AP_PASSWORD);
   
   if (DEBUG_ENABLED) {
-    Serial.println("[WiFi] Access Point started");
-    Serial.print("SSID: ");
+    Serial.println(F("[WiFi] Access Point started"));
+    Serial.print(F("SSID: "));
     Serial.println(apName);
-    Serial.print("Password: ");
+    Serial.print(F("Password: "));
     Serial.println(AP_PASSWORD);
-    Serial.print("IP Address: ");
+    Serial.print(F("IP Address: "));
     Serial.println(WiFi.softAPIP());
   }
   
@@ -193,7 +193,7 @@ void WiFiManager::setupConfigPortal() {
   // If timeout, restart device
   if (isConfigMode) {
     if (DEBUG_ENABLED) {
-      Serial.println("[WiFi] Config portal timed out. Restarting...");
+      Serial.println(F("[WiFi] Config portal timed out. Restarting..."));
     }
     ESP.restart();
   }
@@ -202,14 +202,14 @@ void WiFiManager::setupConfigPortal() {
 bool WiFiManager::loadWifiConfig() {
   if (!LittleFS.begin()) {
     if (DEBUG_ENABLED) {
-      Serial.println("[WiFi] Failed to mount file system");
+      Serial.println(F("[WiFi] Failed to mount file system"));
     }
     return false;
   }
   
   if (!LittleFS.exists(WIFI_CONFIG_FILE)) {
     if (DEBUG_ENABLED) {
-      Serial.println("[WiFi] No WiFi configuration file found");
+      Serial.println(F("[WiFi] No WiFi configuration file found"));
     }
     return false;
   }
@@ -217,7 +217,7 @@ bool WiFiManager::loadWifiConfig() {
   File configFile = LittleFS.open(WIFI_CONFIG_FILE, "r");
   if (!configFile) {
     if (DEBUG_ENABLED) {
-      Serial.println("[WiFi] Failed to open WiFi config file");
+      Serial.println(F("[WiFi] Failed to open WiFi config file"));
     }
     return false;
   }
@@ -227,12 +227,12 @@ bool WiFiManager::loadWifiConfig() {
   configFile.readBytes(buf.get(), size);
   configFile.close();
   
-  JsonDocument doc;
+  StaticJsonDocument<128> doc;  // Small WiFi config file
   DeserializationError error = deserializeJson(doc, buf.get());
   
   if (error) {
     if (DEBUG_ENABLED) {
-      Serial.println("[WiFi] Failed to parse WiFi config file");
+      Serial.println(F("[WiFi] Failed to parse WiFi config file"));
     }
     return false;
   }
@@ -242,14 +242,14 @@ bool WiFiManager::loadWifiConfig() {
   
   if (ssid.length() == 0) {
     if (DEBUG_ENABLED) {
-      Serial.println("[WiFi] SSID empty in config file");
+      Serial.println(F("[WiFi] SSID empty in config file"));
     }
     return false;
   }
   
   if (DEBUG_ENABLED) {
-    Serial.println("[WiFi] Loaded WiFi configuration");
-    Serial.print("SSID: ");
+    Serial.println(F("[WiFi] Loaded WiFi configuration"));
+    Serial.print(F("SSID: "));
     Serial.println(ssid);
   }
   
@@ -259,19 +259,19 @@ bool WiFiManager::loadWifiConfig() {
 void WiFiManager::saveWifiConfig(String newSsid, String newPassword) {
   if (!LittleFS.begin()) {
     if (DEBUG_ENABLED) {
-      Serial.println("[WiFi] Failed to mount file system");
+      Serial.println(F("[WiFi] Failed to mount file system"));
     }
     return;
   }
   
-  JsonDocument doc;
+  StaticJsonDocument<128> doc;  // Small WiFi config file
   doc["ssid"] = newSsid;
   doc["password"] = newPassword;
   
   File configFile = LittleFS.open(WIFI_CONFIG_FILE, "w");
   if (!configFile) {
     if (DEBUG_ENABLED) {
-      Serial.println("[WiFi] Failed to open WiFi config file for writing");
+      Serial.println(F("[WiFi] Failed to open WiFi config file for writing"));
     }
     return;
   }
@@ -284,14 +284,14 @@ void WiFiManager::saveWifiConfig(String newSsid, String newPassword) {
   password = newPassword;
   
   if (DEBUG_ENABLED) {
-    Serial.println("[WiFi] Saved WiFi configuration");
+    Serial.println(F("[WiFi] Saved WiFi configuration"));
   }
 }
 
 void WiFiManager::resetConfig() {
   if (!LittleFS.begin()) {
     if (DEBUG_ENABLED) {
-      Serial.println("[WiFi] Failed to mount file system for reset");
+      Serial.println(F("[WiFi] Failed to mount file system for reset"));
     }
     return;
   }
@@ -299,7 +299,7 @@ void WiFiManager::resetConfig() {
   if (LittleFS.exists(WIFI_CONFIG_FILE)) {
     LittleFS.remove(WIFI_CONFIG_FILE);
     if (DEBUG_ENABLED) {
-      Serial.println("[WiFi] WiFi configuration removed");
+      Serial.println(F("[WiFi] WiFi configuration removed"));
     }
   }
 }

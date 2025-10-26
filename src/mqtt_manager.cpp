@@ -16,11 +16,13 @@ MqttManager::~MqttManager() {
 
 bool MqttManager::begin() {
   if (DEBUG_ENABLED) {
-    Serial.println("[MQTT] Initializing MQTT client");
+    Serial.println(F("[MQTT] Initializing MQTT client"));
   }
   
   // Create a unique client ID using the MAC address
   clientId = DEVICE_UUID;
+
+  wifiClient.setInsecure();  
 
   // Create PubSubClient instance
   mqttClient = new PubSubClient(wifiClient);
@@ -39,13 +41,13 @@ bool MqttManager::begin() {
   
   if (DEBUG_ENABLED) {
     if (connected) {
-      Serial.println("[MQTT] Connected to MQTT broker");
-      Serial.print("Broker: ");
+      Serial.println(F("[MQTT] Connected to MQTT broker"));
+      Serial.print(F("Broker: "));
       Serial.println(MQTT_BROKER);
-      Serial.print("Client ID: ");
+      Serial.print(F("Client ID: "));
       Serial.println(clientId);
     } else {
-      Serial.println("[MQTT] Failed to connect to MQTT broker, will retry later");
+      Serial.println(F("[MQTT] Failed to connect to MQTT broker, will retry later"));
     }
   }
   
@@ -74,20 +76,20 @@ void MqttManager::update() {
 bool MqttManager::reconnect() {
   if (!WiFi.isConnected()) {
     if (DEBUG_ENABLED) {
-      Serial.println("[MQTT] WiFi not connected, skipping MQTT connection");
+      Serial.println(F("[MQTT] WiFi not connected, skipping MQTT connection"));
     }
     return false;
   }
   
   if (DEBUG_ENABLED) {
-    Serial.print("[MQTT] Attempting MQTT connection...");
+    Serial.print(F("[MQTT] Attempting MQTT connection..."));
   }
   
   // Attempt to connect
-  if (mqttClient->connect(clientId.c_str())) {
+  if (mqttClient->connect(clientId.c_str(), MQTT_USERNAME, MQTT_PASSWORD)) {
     connected = true;
     if (DEBUG_ENABLED) {
-      Serial.println("connected");
+      Serial.println(F("connected"));
     }
     
     // Subscribe to topics if needed
@@ -98,21 +100,33 @@ bool MqttManager::reconnect() {
     if (DEBUG_ENABLED) {
       Serial.print("failed, rc=");
       Serial.print(mqttClient->state());
-      Serial.println(" will try again later");
+      Serial.println(F(" will try again later"));
     }
     return false;
+  }
+}
+
+
+
+void MqttManager::disconnect() {
+  if (mqttClient && mqttClient->connected()) {
+    if (DEBUG_ENABLED) {
+      Serial.println(F("[MQTT] Disconnecting from MQTT broker"));
+    }
+    mqttClient->disconnect();
+    connected = false;
   }
 }
 
 bool MqttManager::publishSensorData(const SensorData& sensor1Data, const SensorData& sensor2Data) {
   if (!connected) {
     if (DEBUG_ENABLED) {
-      Serial.println("[MQTT] Not connected, can't publish data");
+      Serial.println(F("[MQTT] Not connected, can't publish data"));
     }
     return false;
   }
   
-  JsonDocument doc;
+  StaticJsonDocument<768> doc;  // Optimized size for sensor data
   doc["timestamp"] = millis();
   doc["device_id"] = clientId;
   
@@ -143,19 +157,20 @@ bool MqttManager::publishSensorData(const SensorData& sensor1Data, const SensorD
   
   // Print payload size for debugging
   if (DEBUG_ENABLED) {
-    Serial.print("[MQTT] Payload size: ");
+    Serial.print(F("[MQTT] Payload size: "));
     Serial.print(payload.length());
-    Serial.println(" bytes");
+    Serial.println(F(" bytes"));
   }
   
   bool success = mqttClient->publish(MQTT_TOPIC_READINGS, payload.c_str());
   
   if (DEBUG_ENABLED) {
     if (success) {
-      Serial.println("[MQTT] Published sensor data: " + payload);
+      Serial.print(F("[MQTT] Published sensor data: "));
+      Serial.println(payload);
     } else {
-      Serial.println("[MQTT] Failed to publish sensor data");
-      Serial.print("[MQTT] MQTT client state: ");
+      Serial.println(F("[MQTT] Failed to publish sensor data"));
+      Serial.print(F("[MQTT] MQTT client state: "));
       Serial.println(mqttClient->state());
     }
   }
@@ -166,12 +181,12 @@ bool MqttManager::publishSensorData(const SensorData& sensor1Data, const SensorD
 bool MqttManager::publishAlert(uint8_t socketNumber, float currentPower, float maxPower) {
   if (!connected) {
     if (DEBUG_ENABLED) {
-      Serial.println("[MQTT] Not connected, can't publish alert");
+      Serial.println(F("[MQTT] Not connected, can't publish alert"));
     }
     return false;
   }
   
-  JsonDocument doc;
+  StaticJsonDocument<256> doc;  // Small alert message
   doc["timestamp"] = millis();
   doc["socket"] = socketNumber;
   doc["current_power"] = currentPower;
@@ -186,9 +201,10 @@ bool MqttManager::publishAlert(uint8_t socketNumber, float currentPower, float m
   
   if (DEBUG_ENABLED) {
     if (success) {
-      Serial.println("[MQTT] Published alert: " + payload);
+      Serial.print(F("[MQTT] Published alert: "));
+      Serial.println(payload);
     } else {
-      Serial.println("[MQTT] Failed to publish alert");
+      Serial.println(F("[MQTT] Failed to publish alert"));
     }
   }
   
@@ -198,7 +214,7 @@ bool MqttManager::publishAlert(uint8_t socketNumber, float currentPower, float m
 void MqttManager::handleCallback(char* topic, byte* payload, unsigned int length) {
   // Process received MQTT messages here if needed
   if (DEBUG_ENABLED) {
-    Serial.print("[MQTT] Message arrived on topic: ");
+    Serial.print(F("[MQTT] Message arrived on topic: "));
     Serial.println(topic);
     Serial.print("Payload: ");
     for (unsigned int i = 0; i < length; i++) {

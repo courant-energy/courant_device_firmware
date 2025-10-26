@@ -5,7 +5,7 @@ RelayManager::RelayManager() : relay1State(false), relay2State(false) {
 
 void RelayManager::begin() {
   if (DEBUG_ENABLED) {
-    Serial.println("[Relay] Initializing relay control");
+    Serial.println(F("[Relay] Initializing relay control"));
   }
   
   // Set relay pins as outputs
@@ -18,7 +18,7 @@ void RelayManager::begin() {
   delay(1000); // Allow time for relays to settle
   
   if (DEBUG_ENABLED) {
-    Serial.println("[Relay] Relay control initialized");
+    Serial.println(F("[Relay] Relay control initialized"));
   }
 }
 
@@ -30,7 +30,8 @@ void RelayManager::setRelay1(bool state) {
     delay(1000); // Debounce delay to prevent flickering
     
     if (DEBUG_ENABLED) {
-      Serial.println("[Relay] Relay 1 set to " + String(state ? "ON" : "OFF"));
+      Serial.print(F("[Relay] Relay 1 set to "));
+      Serial.println(state ? F("ON") : F("OFF"));
     }
   }
 }
@@ -43,7 +44,8 @@ void RelayManager::setRelay2(bool state) {
     delay(1000); // Debounce delay to prevent flickering
     
     if (DEBUG_ENABLED) {
-      Serial.println("[Relay] Relay 2 set to " + String(state ? "ON" : "OFF"));
+      Serial.print(F("[Relay] Relay 2 set to "));
+      Serial.println(state ? F("ON") : F("OFF"));
     }
   }
 }
@@ -54,7 +56,7 @@ void RelayManager::emergencyShutdown(uint8_t relayNumber) {
     relay1State = false;
     delay(1000); // Debounce delay to prevent flickering
     if (DEBUG_ENABLED) {
-      Serial.println("[Relay] !!! EMERGENCY SHUTDOWN !!! Relay 1 turned OFF");
+      Serial.println(F("[Relay] !!! EMERGENCY SHUTDOWN !!! Relay 1 turned OFF"));
     }
   }
   else if (relayNumber == 2) {
@@ -62,7 +64,7 @@ void RelayManager::emergencyShutdown(uint8_t relayNumber) {
     relay2State = false;
     delay(1000); // Debounce delay to prevent flickering
     if (DEBUG_ENABLED) {
-      Serial.println("[Relay] !!! EMERGENCY SHUTDOWN !!! Relay 2 turned OFF");
+      Serial.println(F("[Relay] !!! EMERGENCY SHUTDOWN !!! Relay 2 turned OFF"));
     }
   }
 }

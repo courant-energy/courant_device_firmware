@@ -19,6 +19,7 @@ MqttManager mqttManager;
 // Timing variables
 unsigned long lastPublishTime = 0;
 unsigned long lastPowerCheckTime = 0;
+unsigned long lastConfigCheckTime = 0;
 bool resetButtonPressed = false;
 unsigned long resetButtonPressTime = 0;
 
@@ -27,6 +28,8 @@ void checkPowerThresholds();
 void checkResetButton();
 void publishSensorData();
 void setupResetButton();
+bool updateConfiguration();
+void checkPeriodicConfigUpdate();
 
 void setup()
 {
@@ -34,15 +37,15 @@ void setup()
   Serial.begin(115200);
   delay(1000); // Short delay to ensure serial is ready
 
-  Serial.println("\n\n");
-  Serial.println("===================================");
-  Serial.println("Courant Power Monitoring System");
-  Serial.println("===================================");
+  Serial.println(F("\n\n"));
+  Serial.println(F("==================================="));
+  Serial.println(F("Courant Power Monitoring System"));
+  Serial.println(F("==================================="));
 
   // Initialize LittleFS
   if (!LittleFS.begin())
   {
-    Serial.println("[System] Failed to mount file system");
+    Serial.println(F("[System] Failed to mount file system"));
   }
 
   // Setup reset button pin
@@ -71,11 +74,16 @@ void setup()
     relayManager.setRelay1(configManager.getSocket1Config().isOn);
     relayManager.setRelay2(configManager.getSocket2Config().isOn);
 
-    Serial.println("[System] Initialization complete, starting main loop");
+    Serial.println(F("[System] Initialization complete, starting main loop"));
+    if (DEBUG_ENABLED) {
+      Serial.print(F("[System] Free heap after initialization: "));
+      Serial.print(ESP.getFreeHeap());
+      Serial.println(F(" bytes"));
+    }
   }
   else
   {
-    Serial.println("[System] WiFi in config mode, awaiting configuration");
+    Serial.println(F("[System] WiFi in config mode, awaiting configuration"));
   }
 }
 
@@ -90,8 +98,8 @@ void loop()
   // Only proceed with normal operations if not in config mode
   if (!wifiManager.isInConfigMode())
   {
-    // Update configuration (periodically checks API)
-    configManager.update();
+    // Check for periodic configuration updates (with MQTT coordination)
+    checkPeriodicConfigUpdate();
 
     // Update sensor readings
     if (sensorManager.update())
@@ -115,10 +123,55 @@ void loop()
   delay(10);
 }
 
+bool updateConfiguration()
+{
+  // 1. Temporarily disconnect MQTT to free TLS resources
+  if (mqttManager.isConnected()) {
+    if (DEBUG_ENABLED) {
+      Serial.println(F("[System] Temporarily disconnecting MQTT for configuration update"));
+    }
+    mqttManager.disconnect();
+    // Short delay to ensure socket closure is processed
+    delay(50);
+  }
+
+  // 2. Execute the secure HTTPS request
+  bool success = configManager.fetchConfig();
+
+  // 3. MQTT will automatically reconnect on next update() call in main loop
+  if (DEBUG_ENABLED) {
+    if (success) {
+      Serial.println(F("[System] Configuration update successful, MQTT will reconnect"));
+    } else {
+      Serial.println(F("[System] Configuration update failed, MQTT will reconnect"));
+    }
+  }
+
+  return success;
+}
+
+void checkPeriodicConfigUpdate()
+{
+  unsigned long currentTime = millis();
+  
+  // Check if it's time to fetch new config (every 10 seconds as defined in CONFIG_CHECK_INTERVAL)
+  if (currentTime - lastConfigCheckTime >= CONFIG_CHECK_INTERVAL) {
+    lastConfigCheckTime = currentTime;
+    
+    if (WiFi.isConnected()) {
+      if (DEBUG_ENABLED) {
+        Serial.println(F("[Config] Performing periodic configuration check"));
+      }
+      updateConfiguration();
+    }
+  }
+}
+
 void setupResetButton()
 {
   pinMode(RST_BTN_PIN, INPUT_PULLUP);
-  Serial.println("[System] Reset button configured on pin " + String(RST_BTN_PIN));
+  Serial.print(F("[System] Reset button configured on pin "));
+  Serial.println(RST_BTN_PIN);
 }
 
 void checkResetButton()
@@ -131,26 +184,26 @@ void checkResetButton()
   {
     resetButtonPressed = true;
     resetButtonPressTime = millis();
-    Serial.println("[System] Reset button pressed, hold for 5 seconds to reset config");
+    Serial.println(F("[System] Reset button pressed, hold for 5 seconds to reset config"));
   }
 
   // Check if button released
   if (!buttonState && resetButtonPressed)
   {
     resetButtonPressed = false;
-    Serial.println("[System] Reset button released");
+    Serial.println(F("[System] Reset button released"));
   }
 
   // Check if button held for reset duration (5 seconds)
   if (resetButtonPressed && (millis() - resetButtonPressTime > 5000))
   {
-    Serial.println("[System] Reset button held for 5 seconds, performing factory reset...");
+    Serial.println(F("[System] Reset button held for 5 seconds, performing factory reset..."));
 
     // Reset all configurations
     wifiManager.resetConfig();
     configManager.resetConfig();
 
-    Serial.println("[System] Factory reset complete. Rebooting...");
+    Serial.println(F("[System] Factory reset complete. Rebooting..."));
     delay(1000);
     ESP.restart();
   }
@@ -176,9 +229,11 @@ void checkPowerThresholds()
   // Check Socket 1 power threshold
   if (sensor1Data.isValid && sensor1Data.power > socket1Config.maximumPower && socket1Config.isOn)
   {
-    Serial.println("[Alert] Socket 1 power exceeded threshold! " +
-                   String(sensor1Data.power) + "W > " +
-                   String(socket1Config.maximumPower) + "W");
+    Serial.print(F("[Alert] Socket 1 power exceeded threshold! "));
+    Serial.print(sensor1Data.power);
+    Serial.print(F("W > "));
+    Serial.print(socket1Config.maximumPower);
+    Serial.println(F("W"));
 
     // Send alert via MQTT
     mqttManager.publishAlert(1, sensor1Data.power, socket1Config.maximumPower);
@@ -188,16 +243,18 @@ void checkPowerThresholds()
     
     // Refetch configuration from server after emergency shutdown
     if (WiFi.isConnected()) {
-      Serial.println("[Config] Refetching configuration after emergency shutdown");
-      configManager.fetchConfig();
+      Serial.println(F("[Config] Refetching configuration after emergency shutdown"));
+      updateConfiguration();
     }
   }
   // Check Socket 2 power threshold
   if (sensor2Data.isValid && sensor2Data.power > socket2Config.maximumPower && socket2Config.isOn)
   {
-    Serial.println("[Alert] Socket 2 power exceeded threshold! " +
-                   String(sensor2Data.power) + "W > " +
-                   String(socket2Config.maximumPower) + "W");
+    Serial.print(F("[Alert] Socket 2 power exceeded threshold! "));
+    Serial.print(sensor2Data.power);
+    Serial.print(F("W > "));
+    Serial.print(socket2Config.maximumPower);
+    Serial.println(F("W"));
 
     // Turn off the relay
     relayManager.emergencyShutdown(2);
@@ -207,8 +264,8 @@ void checkPowerThresholds()
     
     // Refetch configuration from server after emergency shutdown
     if (WiFi.isConnected()) {
-      Serial.println("[Config] Refetching configuration after emergency shutdown");
-      configManager.fetchConfig();
+      Serial.println(F("[Config] Refetching configuration after emergency shutdown"));
+      updateConfiguration();
     }
   }
 }
@@ -233,13 +290,19 @@ void publishSensorData()
 
       if (DEBUG_ENABLED)
       {
-        Serial.println("[System] Published sensor data: Socket1=" +
-                       String(socket1Data.power) + "W (" +
-                       String(socket1Data.voltage) + "V, " +
-                       String(socket1Data.current) + "A), Socket2=" +
-                       String(socket2Data.power) + "W (" +
-                       String(socket2Data.voltage) + "V, " +
-                       String(socket2Data.current) + "A)");
+        Serial.print(F("[System] Published sensor data: Socket1="));
+        Serial.print(socket1Data.power);
+        Serial.print(F("W ("));
+        Serial.print(socket1Data.voltage);
+        Serial.print(F("V, "));
+        Serial.print(socket1Data.current);
+        Serial.print(F("A), Socket2="));
+        Serial.print(socket2Data.power);
+        Serial.print(F("W ("));
+        Serial.print(socket2Data.voltage);
+        Serial.print(F("V, "));
+        Serial.print(socket2Data.current);
+        Serial.println(F("A)"));
       }
     }
   }
